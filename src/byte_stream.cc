@@ -2,55 +2,61 @@
 
 using namespace std;
 
-ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ) {}
+ByteStream::ByteStream( uint64_t capacity )
+  : capacity_( capacity ), pushed( 0 ), popped( 0 ), closed( false ), str( "" )
+{}
 
 void Writer::push( string data )
 {
-  (void)data; // Your code here.
+  uint64_t i = 0;
+  while ( str.size() < capacity_ && i < data.size() ) {
+    str += data[i++];
+    pushed++;
+  }
 }
 
 void Writer::close()
 {
-  // Your code here.
+  closed = true;
 }
 
 bool Writer::is_closed() const
 {
-  return {}; // Your code here.
+  return closed;
 }
 
 uint64_t Writer::available_capacity() const
 {
-  return {}; // Your code here.
+  return capacity_ - str.size();
 }
 
 uint64_t Writer::bytes_pushed() const
 {
-  return {}; // Your code here.
+  return pushed;
 }
 
 string_view Reader::peek() const
 {
-  return {}; // Your code here.
+  return string_view( str );
 }
 
 void Reader::pop( uint64_t len )
 {
-  (void)len; // Your code here.
+  popped += min( len, str.length() );
+  str = str.substr( min( len, str.length() ) );
 }
 
 bool Reader::is_finished() const
 {
-  return {}; // Your code here.
+  return ( str.size() == 0 && closed );
 }
 
 uint64_t Reader::bytes_buffered() const
 {
-  return {}; // Your code here.
+  return str.size();
 }
 
 uint64_t Reader::bytes_popped() const
 {
-  return {}; // Your code here.
+  return popped;
 }
-
