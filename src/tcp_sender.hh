@@ -3,15 +3,43 @@
 #include "byte_stream.hh"
 #include "tcp_receiver_message.hh"
 #include "tcp_sender_message.hh"
-
+#include <deque>
 #include <functional>
+
+class AckTrack
+{
+public:
+  AckTrack() : dq() {}
+  void update( uint32_t ackno );
+  TCPSenderMessage getMsg();
+  uint64_t size() const;
+  void push( uint32_t seqno, const TCPSenderMessage& msg );
+  bool hasMsg() const;
+
+private:
+  std::deque<std::pair<uint32_t, TCPSenderMessage>> dq;
+};
 
 class TCPSender
 {
 public:
   /* Construct TCP sender with given default Retransmission Timeout and possible ISN */
   TCPSender( ByteStream&& input, Wrap32 isn, uint64_t initial_RTO_ms )
-    : input_( std::move( input ) ), isn_( isn ), initial_RTO_ms_( initial_RTO_ms )
+    : input_( std::move( input ) )
+    , isn_( isn )
+    , initial_RTO_ms_( initial_RTO_ms )
+    , curr_RTO( initial_RTO_ms )
+    , timer( 0 )
+    , window_size( 0 )
+    , cons_retrans( 0 )
+    , last_ackno( 0 )
+    , track()
+    , sent_syn( 0 )
+    , sent_fin( 0 )
+    , next_seqno( 0 )
+    , window_size_receiver( -101 )
+    , zero_sent_once( false )
+    , err( 0 )
   {}
 
   /* Generate an empty TCPSenderMessage */
@@ -42,4 +70,16 @@ private:
   ByteStream input_;
   Wrap32 isn_;
   uint64_t initial_RTO_ms_;
+  uint64_t curr_RTO;
+  int64_t timer;
+  uint64_t window_size;
+  uint64_t cons_retrans;
+  uint32_t last_ackno;
+  AckTrack track;
+  bool sent_syn;
+  bool sent_fin;
+  uint32_t next_seqno;
+  uint64_t window_size_receiver;
+  bool zero_sent_once;
+  bool err;
 };

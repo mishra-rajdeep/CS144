@@ -4,8 +4,11 @@
 #include "ethernet_frame.hh"
 #include "ipv4_datagram.hh"
 
+#include <array>
+#include <deque>
 #include <memory>
 #include <queue>
+#include <unordered_map>
 
 // A "network interface" that connects IP (the internet layer, or network layer)
 // with Ethernet (the network access layer, or link layer).
@@ -79,7 +82,13 @@ private:
 
   // IP (known as internet-layer or network-layer) address of the interface
   Address ip_address_;
-
+  size_t curr_time_ms;
+  std::unordered_map<uint32_t, std::pair<size_t, std::array<uint8_t, 6>>> arp_map;
+  std::unordered_map<uint32_t, size_t> arp_time;
+  std::unordered_map<uint32_t, std::deque<std::pair<size_t, InternetDatagram>>> wait_queue;
   // Datagrams that have been received
   std::queue<InternetDatagram> datagrams_received_ {};
+  void __arp_reply( ARPMessage& arpmsg );
+  void __arp_request( uint32_t ip_addr );
+  void __ip_send( InternetDatagram dgram, uint32_t ip_addr );
 };
