@@ -16,15 +16,39 @@ void Router::add_route( const uint32_t route_prefix,
                         const optional<Address> next_hop,
                         const size_t interface_num )
 {
-  cerr << "DEBUG: adding route " << Address::from_ipv4_numeric( route_prefix ).ip() << "/"
-       << static_cast<int>( prefix_length ) << " => " << ( next_hop.has_value() ? next_hop->ip() : "(direct)" )
-       << " on interface " << interface_num << "\n";
-
-  debug( "unimplemented add_route() called" );
+  routing_table.emplace_back( route_prefix, prefix_length, next_hop, interface_num );
 }
 
 // Go through all the interfaces, and route every incoming datagram to its proper outgoing interface.
 void Router::route()
 {
-  debug( "unimplemented route() called" );
+  for ( auto& interface : interfaces_ ) {
+    auto& q = interface->datagrams_received();
+    while ( !q.empty() ) {
+      auto dgram = q.front();
+      q.pop();
+      if ( dgram.header.ttl <= 1 )
+        continue;
+      dgram.header.ttl--;
+      dgram.header.compute_checksum();
+      uint8_t best_len = 0;
+      std::optional<Address> best_next_hop;
+      size_t best_interface = -1;
+      for ( auto& [route_prefix, prefix_length, next_hop, interface_num] : routing_table ) {
+        uint32_t mask = ( prefix_length == 0 ) ? 0 : ( ~uint32_t( 0 ) << ( 32 - prefix_length ) );
+        if ( ( dgram.header.dst & mask ) == ( route_prefix & mask ) ) {
+          if ( best_interface == size_t( -1 ) || prefix_length > best_len ) {
+            best_len = prefix_length;
+            best_next_hop = next_hop;
+            best_interface = interface_num;
+          }
+        }
+      }
+      if ( best_interface != size_t( -1 ) ) {
+        Address target
+          = best_next_hop.has_value() ? best_next_hop.value() : Address::from_ipv4_numeric( dgram.header.dst );
+        interfaces_.at( best_interface )->send_datagram( dgram, target );
+      }
+    }
+  }
 }
