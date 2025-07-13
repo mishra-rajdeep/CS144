@@ -1,4 +1,4 @@
-# CS149 Self-Study: Networking Systems
+# CS144 Self-Study: Networking Systems
 
 This repository contains my solutions for the assignments from **Stanford CS144: Computer Networking** (Winter 2025) which I self-studied during Summer 2025. The course gradually builds a simplified TCP/IP stack from scratch, providing a deep understanding of how networking works under the hood.
 
